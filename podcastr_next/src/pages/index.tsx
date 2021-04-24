@@ -1,20 +1,21 @@
-import { useEffect } from 'react'
+import { useContext, useEffect } from 'react'
 import Image from 'next/image'
 import { GetStaticProps } from 'next'
 import { format, parseISO } from 'date-fns'
-import { api } from './services/api'
+import api from './services/api'
 import ptBR from 'date-fns/locale/pt-BR'
 import { convertDurationToTimeString } from '../utils/convertDurationToTimeString'
 import Link from 'next/link'
 
 import styles from './home.module.scss'
+import { PlayerContext } from '../contexts/playerContext'
 
 type Episode = {
     id: string,
     title: string,
     thumbnail: string,
     members: string,
-    duration: string,
+    duration: number,
     durationAsString: string,
     url: string,
     publishedAt: string,
@@ -34,6 +35,8 @@ export default function Home({ latestEpisodes, allEpisodes }: HomeProps) {
             .then(data => console.log(data))
     })
     */
+
+    const { play } = useContext(PlayerContext)
     return (
         <div className={styles.homepage}>
             <section className={styles.latestEpisodes}>
@@ -57,7 +60,7 @@ export default function Home({ latestEpisodes, allEpisodes }: HomeProps) {
                                     <span>{episode.publishedAt}</span>
                                     <span>{episode.durationAsString}</span>
                                 </div>
-                                <button type='button'>
+                                <button type='button' onClick={() => play(episode)}>
                                     <img src='/play-green.svg' alt='tocar episódio'></img>
                                 </button>
                             </li>
