@@ -1,31 +1,160 @@
 import { useEffect } from 'react'
+import Image from 'next/image'
+import { GetStaticProps } from 'next'
+import { format, parseISO } from 'date-fns'
+import { api } from './services/api'
+import ptBR from 'date-fns/locale/pt-BR'
+import { convertDurationToTimeString } from '../utils/convertDurationToTimeString'
+import Link from 'next/link'
 
-export default function Home(props) {
+import styles from './home.module.scss'
 
-	/* SPA
-	useEffect(() => {
-		fetch('http://localhost:3333/episodes')
-			.then(response => response.json())
-			.then(data => console.log(data))
-	})
-	*/
-	return (
-		<h1>Index</h1>
-	)
+type Episode = {
+    id: string,
+    title: string,
+    thumbnail: string,
+    members: string,
+    duration: string,
+    durationAsString: string,
+    url: string,
+    publishedAt: string,
+}
+
+type HomeProps = {
+    latestEpisodes: Array<Episode>;
+    allEpisodes: Array<Episode>;
+}
+
+export default function Home({ latestEpisodes, allEpisodes }: HomeProps) {
+
+    /* SPA
+    useEffect(() => {
+        fetch('http://localhost:3333/episodes')
+            .then(response => response.json())
+            .then(data => console.log(data))
+    })
+    */
+    return (
+        <div className={styles.homepage}>
+            <section className={styles.latestEpisodes}>
+                <h2>Últimos episódios</h2>
+                <ul>
+                    {latestEpisodes.map(episode => {
+                        return (
+                            <li key={episode.id}>
+                                <Image
+                                    width={192}
+                                    height={192}
+                                    src={episode.thumbnail}
+                                    alt={episode.title}
+                                    objectFit="cover"
+                                ></Image>
+                                <div className={styles.episodeDetails}>
+                                    <Link href={`/episode/${episode.id}`}>
+                                        <a>{episode.title}</a>
+                                    </Link>
+                                    <p>{episode.members}</p>
+                                    <span>{episode.publishedAt}</span>
+                                    <span>{episode.durationAsString}</span>
+                                </div>
+                                <button type='button'>
+                                    <img src='/play-green.svg' alt='tocar episódio'></img>
+                                </button>
+                            </li>
+                        )
+                    })}
+                </ul>
+
+            </section>
+
+            <section className={styles.allEpisodes}>
+                <h2>Todos os episódios</h2>
+
+                <table cellSpacing={8}>
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Podcast</th>
+                            <th>Integrantes</th>
+                            <th>Data</th>
+                            <th>Duração</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {allEpisodes.map(episode => {
+                            return (
+                                <tr key={episode.id}>
+                                    <td style={{ width: 72 }}>
+                                        <Image
+                                            width={120}
+                                            height={120}
+                                            src={episode.thumbnail}
+                                            alt={episode.title}
+                                            objectFit='cover'>
+                                        </Image>
+                                    </td>
+                                    <td>
+                                        <Link href={`/episode/${episode.id}`}>
+                                            <a>{episode.title}</a>
+                                        </Link>
+                                    </td>
+                                    <td>{episode.members}</td>
+                                    <td style={{ width: 100 }}>{episode.publishedAt}</td>
+                                    <td>{episode.durationAsString}</td>
+                                    <td >
+                                        <button type='button'>
+                                            <img src='/play-green.svg' alt='tocar episódio'></img>
+                                        </button>
+                                    </td>
+
+                                </tr>
+                            )
+                        })}
+                    </tbody>
+                </table>
+            </section>
+        </div>
+
+    )
 }
 
 // SSG
 
-export async function getStaticProps() {
-	const response = await fetch('http://localhost:3333/episodes')
-	const data = await response.json()
+export const getStaticProps: GetStaticProps = async () => {
+    const { data } = await api.get('episodes', {
+        params: {
+            _limit: 12,
+            _sort: 'published_at',
+            _order: 'desc'
+        }
+    })
+    const episodes = data.map(episode => {
+        return {
+            id: episode.id,
+            title: episode.title,
+            thumbnail: episode.thumbnail,
+            members: episode.members,
+            publishedAt: format(parseISO(episode.published_at), 'd MMM yy', { locale: ptBR }),
+            duration: Number(episode.file.duration),
+            durationAsString: convertDurationToTimeString((Number(episode.file.duration))),
+            description: episode.description,
+            url: episode.file.url
+        }
+    })
 
-	return {
-		props: {
-			episodes: data,
-		},
-		revalidate: 60 * 60 * 8
-	}
+    const latestEpisodes = episodes.slice(0, 2)
+    const allEpisodes = episodes.slice(2, episodes.length)
+
+    return {
+        props: {
+            episodes,
+            latestEpisodes,
+            allEpisodes
+        },
+        revalidate: 60 * 60 * 8
+    }
 }
 
 
@@ -37,10 +166,10 @@ const response = await fetch('http://localhost:3333/episodes')
 const data = await response.json()
 
 return {
-	props:{
-		episodes: data,
+    props:{
+        episodes: data,
 
-	}
+    }
 }
 }
 */
