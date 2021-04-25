@@ -8,6 +8,8 @@ import { convertDurationToTimeString } from '../../utils/convertDurationToTimeSt
 import api from '../services/api'
 import Link from 'next/link'
 import styles from './episode.module.scss'
+import Head from 'next/head'
+import { PlayerContext, usePlayer } from '../../contexts/playerContext'
 
 
 type Episode = {
@@ -16,7 +18,7 @@ type Episode = {
 	thumbnail: string,
 	description: string,
 	members: string,
-	duration: string,
+	duration: number,
 	durationAsString: string,
 	url: string,
 	publishedAt: string,
@@ -29,15 +31,20 @@ type EpisodeProps = {
 
 export default function Episode({ episode }: EpisodeProps) {
 	const router = useRouter();
-
-	if(router.isFallback){
+	const { play } = usePlayer()
+	if (router.isFallback) {
 		<p>carregando...</p>
 	}
 	return (
 		<div className={styles.episode}>
+			<Head>
+				<title>
+					{episode.title} | Podcaster
+        </title>
+			</Head>
 			<div className={styles.thumbnailContainer}>
 				<Link href='/'>
-					<button type='button'>
+					<button type='button' >
 						<img src='/arrow-left.svg' alt='voltar'></img>
 					</button>
 				</Link>
@@ -47,7 +54,7 @@ export default function Episode({ episode }: EpisodeProps) {
 					src={episode.thumbnail}
 					objectFit='cover'></Image>
 
-				<button type='button'>
+				<button type='button' onClick={() => play(episode)}>
 					<img src='/play.svg' alt='Tocar episódio'></img>
 				</button>
 			</div>
@@ -75,24 +82,24 @@ export default function Episode({ episode }: EpisodeProps) {
 //fallback: true - se acessou um ep nao estatico, busca as info e salva uma pagina estatica (funciona do lado do client, precisa de um "carregando")
 //fallback: 'blocking' - mesma coisa do true porém a pessoa só navega pra tela quando ela já esta carregada
 export const getStaticPaths: GetStaticPaths = async () => {
-	
+
 	const { data } = await api.get('episodes', {
-        params: {
-            _limit: 12,
-            _sort: 'published_at',
-            _order: 'desc'
-        }
-    })
+		params: {
+			_limit: 12,
+			_sort: 'published_at',
+			_order: 'desc'
+		}
+	})
 
 	//gera apenas os dois primeiros episodios estaticamente
-	const paths = data.map(episode =>{
-		return{
+	const paths = data.map(episode => {
+		return {
 			params: {
 				slug: episode.id
 			}
 		}
 	})
-	
+
 	return {
 		/*
 		paths: [
